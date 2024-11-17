@@ -34,6 +34,10 @@ function strbuf.strip(str: string): string
 	return string.gsub(string.gsub(str, "^\n+", ""), "\n+$", "")
 end
 
+function strbuf.indent(str: string, indent: string): string
+	return `{indent}{string.gsub(str,"\n",`\n{indent}`)}`
+end
+
 -- Push properties
 function strbuf:pushProps(props: { moonwave.moonwave_high_field }, _titleIndent: number?, noTitle: boolean?): strbuf
 	local titleIndent = _titleIndent or 2
@@ -60,7 +64,7 @@ function strbuf:pushProps(props: { moonwave.moonwave_high_field }, _titleIndent:
 		end
 
 		-- hr
-		if props[index+1] then
+		if props[index + 1] then
 			self:pushHr()
 		end
 	end
@@ -76,7 +80,11 @@ function strbuf:pushFields(fields: { moonwave.moonwave_high_field }, titleIndent
 	return self
 end
 
-function strbuf:pushFunctions(functions: { moonwave.moonwave_high_function }, _titleIndent: number?, noTitle: boolean?): strbuf
+function strbuf:pushFunctions(
+	functions: { moonwave.moonwave_high_function },
+	_titleIndent: number?,
+	noTitle: boolean?
+): strbuf
 	local titleIndent = _titleIndent or 2
 	if not noTitle then
 		self:pushTitle("Functions", titleIndent)
@@ -93,22 +101,24 @@ function strbuf:pushFunctions(functions: { moonwave.moonwave_high_function }, _t
 		-- params
 		if item.params then
 			self:pushTitle("Parameters", titleIndent + 2)
-			for _,param in item.params do
+			for _, param in item.params do
 				self:push(`- {strbuf.inline(strbuf.strip(param.name))} {strbuf.strip(param.description)}\n`)
 			end
-			if item.returns then self:push("\n") end
+			if item.returns then
+				self:push("\n")
+			end
 		end
 
 		-- returns
 		if item.returns then
 			self:pushTitle("Returns", titleIndent + 2)
-			for _,return_ in item.returns do
+			for _, return_ in item.returns do
 				self:push(`- {strbuf.strip(return_.description)}\n`)
 			end
 		end
 
 		-- hr
-		if functions[index+1] then
+		if functions[index + 1] then
 			self:pushHr()
 		end
 	end
@@ -116,11 +126,83 @@ function strbuf:pushFunctions(functions: { moonwave.moonwave_high_function }, _t
 	return self
 end
 
-function strbuf:pushMethods(methods: { moonwave.moonwave_high_function }, titleIndent: number?, noTitle: boolean?): strbuf
+function strbuf:pushMethods(
+	methods: { moonwave.moonwave_high_function },
+	titleIndent: number?,
+	noTitle: boolean?
+): strbuf
 	if not noTitle then
 		self:pushTitle("Methods", titleIndent or 2)
 	end
 	self:pushFunctions(methods, titleIndent, true)
+	return self
+end
+
+function strbuf.filterConstructor(
+	methods: { moonwave.moonwave_high_function }
+): ({ moonwave.moonwave_high_function }, { moonwave.moonwave_high_function }?)
+	local filtered = {}
+	local constructors = {}
+
+	for _, method in methods do
+		if method.tags and table.find(method.tags, "Constructor") then
+			table.insert(constructors, method)
+			continue
+		end
+		table.insert(filtered, method)
+	end
+
+	return filtered, if #constructors == 0 then nil else constructors
+end
+
+function strbuf:pushClass(class: moonwave.moonwave_high_class, _titleIndent: number?): strbuf
+	local titleIndent = _titleIndent or 1
+	local childrenIndent = titleIndent + 1
+	self:pushTitle(class.name, titleIndent)
+
+	-- Filter constructors
+	local functions: { moonwave.moonwave_high_function }?
+	local functionConstructors: { moonwave.moonwave_high_function }?
+	local methods: { moonwave.moonwave_high_function }?
+	local methodConstructors: { moonwave.moonwave_high_function }?
+	if class.functions then
+		functions, functionConstructors = strbuf.filterConstructor(class.functions)
+	end
+	if class.methods then
+		methods, methodConstructors = strbuf.filterConstructor(class.methods)
+	end
+
+	-- Push comments
+	if class.comments ~= "" then
+		self:pushComments(class.comments)
+	end
+
+	-- Push constructors
+	if functionConstructors or methodConstructors then
+		self:pushTitle("Constructors", childrenIndent)
+		if functionConstructors then
+			self:pushFunctions(functionConstructors, childrenIndent, false)
+		end
+		if methodConstructors then
+			self:pushFunctions(methodConstructors, childrenIndent, false)
+		end
+	end
+
+	-- Children
+	if class.fields then
+		self:pushFields(class.fields, childrenIndent)
+	end
+	if class.props then
+		self:pushProps(class.props, childrenIndent)
+	end
+	if functions then
+		self:pushFunctions(functions, childrenIndent)
+	end
+	if methods then
+		self:pushMethods(methods, childrenIndent)
+	end
+	-- TODO: type
+
 	return self
 end
 
@@ -135,11 +217,36 @@ export type strbuf = {
 	pushTitle: (self: strbuf, str: string, level: number?) -> strbuf,
 	inline: (str: string) -> string,
 	strip: (str: string) -> string,
+	indent: (str: string, indent: string) -> string,
 	pushHr: (self: strbuf) -> strbuf,
-	pushProps: (self: strbuf, props: { moonwave.moonwave_high_field }, titleIndent: number?, noTitle: boolean?) -> strbuf,
-	pushFields: (self: strbuf, fields: { moonwave.moonwave_high_field }, titleIndent: number?, noTitle: boolean?) -> strbuf,
-	pushFunctions: (self: strbuf, functions: { moonwave.moonwave_high_function }, titleIndent: number?, noTitle: boolean?) -> strbuf,
-	pushMethods: (self: strbuf, methods: { moonwave.moonwave_high_function }, titleIndent: number?, noTitle: boolean?) -> strbuf,
+	pushProps: (
+		self: strbuf,
+		props: { moonwave.moonwave_high_field },
+		titleIndent: number?,
+		noTitle: boolean?
+	) -> strbuf,
+	pushFields: (
+		self: strbuf,
+		fields: { moonwave.moonwave_high_field },
+		titleIndent: number?,
+		noTitle: boolean?
+	) -> strbuf,
+	pushFunctions: (
+		self: strbuf,
+		functions: { moonwave.moonwave_high_function },
+		titleIndent: number?,
+		noTitle: boolean?
+	) -> strbuf,
+	pushMethods: (
+		self: strbuf,
+		methods: { moonwave.moonwave_high_function },
+		titleIndent: number?,
+		noTitle: boolean?
+	) -> strbuf,
+	pushClass: (self: strbuf, class: moonwave.moonwave_high_class, titleIndent: number?) -> strbuf,
+	filterConstructor: (
+		methods: { moonwave.moonwave_high_function }
+	) -> ({ moonwave.moonwave_high_function }, { moonwave.moonwave_high_function }?),
 	pushComments: (self: strbuf, comments: string) -> strbuf,
 }
 
