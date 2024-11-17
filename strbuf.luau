@@ -50,7 +50,7 @@ function strbuf:pushProps(props: { moonwave.moonwave_high_field }, _titleIndent:
 
 		-- readonly tag
 		if item.readonly then
-			self:push("**@readonly** ")
+			self:push("**@readonly**\n\n")
 		end
 
 		-- inline type

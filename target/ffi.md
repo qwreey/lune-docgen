@@ -281,7 +281,9 @@ A user manageable heap memory.
 
 #### size
 
-**@readonly** The size of the box.
+**@readonly**
+
+The size of the box.
 
 ### Methods
 
@@ -546,13 +548,17 @@ A c numbric type information.
 
 #### size
 
-**@readonly** The size of the type in bytes.
+**@readonly**
+
+The size of the type in bytes.
 
 ---
 
 #### signedness
 
-**@readonly** The signedness of the type.
+**@readonly**
+
+The signedness of the type.
 
 ### Methods
 
@@ -667,7 +673,9 @@ A c pointer type information.
 
 #### size
 
-**@readonly** The size of a pointer. should be the same for all pointers.
+**@readonly**
+
+The size of a pointer. should be the same for all pointers.
 
 Equivalent to `ffi.c.usize.size`.
 
@@ -675,7 +683,9 @@ Equivalent to `ffi.c.usize.size`.
 
 #### inner
 
-**@readonly** The inner type of the pointer.
+**@readonly**
+
+The inner type of the pointer.
 
 ### Methods
 
@@ -745,19 +755,25 @@ For function arguments, use CPtr instead.
 
 #### size
 
-**@readonly** The total size of the array in bytes.
+**@readonly**
+
+The total size of the array in bytes.
 
 ---
 
 #### length
 
-**@readonly** The length of the array.
+**@readonly**
+
+The length of the array.
 
 ---
 
 #### inner
 
-**@readonly** The inner element type of the array.
+**@readonly**
+
+The inner element type of the array.
 
 ### Methods
 
@@ -847,7 +863,9 @@ For struct field, array element, or function arguments, use `void:ptr()` instead
 
 #### size
 
-**@readonly** The size of a function pointer.
+**@readonly**
+
+The size of a function pointer.
 
 Equivalent to `ffi.c.usize.size`.
 
@@ -881,7 +899,9 @@ A c struct type information.
 
 #### size
 
-**@readonly** The size of a struct, including padding.
+**@readonly**
+
+The size of a struct, including padding.
 
 ## CVoidInfo
 
@@ -891,7 +911,9 @@ A type that represents c void. can only be used for the function return type.
 
 #### size
 
-**@readonly** The size of the void type. It is always 0.
+**@readonly**
+
+The size of the void type. It is always 0.
 
 ### Methods
 
