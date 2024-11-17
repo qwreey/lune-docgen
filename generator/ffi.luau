@@ -1,5 +1,4 @@
 local moonwave = require("../moonwave-luau")
-local strbuf = require("../strbuf")
 
 local function filterCTypeInfo(
 	fields: { moonwave.moonwave_high_field }
@@ -18,14 +17,8 @@ local function filterCTypeInfo(
 	return filtered, types
 end
 
-local function pushTypes(buf: strbuf.strbuf, types: { moonwave.moonwave_high_field })
-	for _, ctype in types do
-		buf:push(`- {buf.inline(buf.strip(ctype.name))}\n\n{buf.indent(buf.strip(ctype.comments), "  ")}\n\n`)
-	end
-end
-
 return function(doc: moonwave.moonwave_high): string
-	local buf = strbuf.new()
+	local buf = moonwave.docgen.new()
 	-- buf:pushClass(doc.FFI):pushClass(doc.C)
 
 	local ffiProps, ffiTypes = filterCTypeInfo(doc.FFI.props :: any)
@@ -35,7 +28,7 @@ return function(doc: moonwave.moonwave_high): string
 		:pushProps(ffiProps)
 		:pushTitle("Types", 2)
 		:pushComments("Fixed size `CTypeInfo`s")
-	pushTypes(buf, ffiTypes)
+		:pushSimpleField(ffiTypes, { withoutType = true })
 
 	local _cProps, cTypes = filterCTypeInfo(doc.C.props :: any)
 	buf:pushTitle("C")
@@ -43,7 +36,7 @@ return function(doc: moonwave.moonwave_high): string
 		:pushFunctions(doc.C.functions)
 		:pushTitle("Types", 2)
 		:pushComments("Compile time size `CTypeInfo`s")
-	pushTypes(buf, cTypes)
+		:pushSimpleField(cTypes, { withoutType = true })
 
 	buf:pushTitle("Data")
 		:pushComments("Classes for handling memory")
