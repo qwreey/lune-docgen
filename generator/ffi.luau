@@ -19,7 +19,6 @@ end
 
 return function(doc: moonwave.moonwave_high): string
 	local buf = moonwave.docgen.new()
-	-- buf:pushClass(doc.FFI):pushClass(doc.C)
 
 	local ffiProps, ffiTypes = filterCTypeInfo(doc.FFI.props :: any)
 	buf:pushTitle("FFI")
