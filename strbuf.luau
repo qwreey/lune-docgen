@@ -35,7 +35,47 @@ function strbuf.strip(str: string): string
 end
 
 function strbuf.indent(str: string, indent: string): string
-	return `{indent}{string.gsub(str,"\n",`\n{indent}`)}`
+	return `{indent}{string.gsub(str, "\n", `\n{indent}`)}`
+end
+
+function strbuf:pushAttrs(
+	item: moonwave.moonwave_high_field | moonwave.moonwave_high_function | moonwave.moonwave_high_class
+): strbuf
+	local pushed = false
+
+	-- unreleased tag
+	if item.unreleased then
+		self:push("**@unreleased**\n")
+		pushed = true
+	end
+
+	-- readonly tag
+	if (item :: moonwave.moonwave_high_field).readonly then
+		self:push("**@readonly**\n")
+		pushed = true
+	end
+
+	-- since tag
+	local since = item.since
+	if since then
+		self:push(`**@since** {strbuf.strip(since)}\n`)
+		pushed = true
+	end
+
+	-- deprecated
+	local deprecated = item.deprecated
+	if deprecated then
+		self:push(
+			`**@deprecated** {strbuf.inline(strbuf.strip(deprecated.version))} {strbuf.strip(deprecated.description)}\n`
+		)
+		pushed = true
+	end
+
+	if pushed then
+		self:push("\n")
+	end
+
+	return self
 end
 
 -- Push properties
@@ -45,13 +85,15 @@ function strbuf:pushProps(props: { moonwave.moonwave_high_field }, _titleIndent:
 		self:pushTitle("Properties", titleIndent)
 	end
 	for index, item in props do
+		if item.ignore then
+			continue
+		end
+
 		-- name
 		self:pushTitle(strbuf.strip(item.name), titleIndent + 1)
 
-		-- readonly tag
-		if item.readonly then
-			self:push("**@readonly**\n\n")
-		end
+		-- attrs
+		self:pushAttrs(item)
 
 		-- inline type
 		if item.type then
@@ -90,8 +132,15 @@ function strbuf:pushFunctions(
 		self:pushTitle("Functions", titleIndent)
 	end
 	for index, item in functions do
+		if item.ignore then
+			continue
+		end
+
 		-- name
 		self:pushTitle(strbuf.strip(item.name), titleIndent + 1)
+
+		-- attrs
+		self:pushAttrs(item)
 
 		-- comments
 		if item.comments ~= "" then
@@ -159,6 +208,9 @@ function strbuf:pushClass(class: moonwave.moonwave_high_class, _titleIndent: num
 	local titleIndent = _titleIndent or 1
 	local childrenIndent = titleIndent + 1
 	self:pushTitle(class.name, titleIndent)
+
+	-- attrs
+	self:pushAttrs(class)
 
 	-- Filter constructors
 	local functions: { moonwave.moonwave_high_function }?
@@ -242,6 +294,10 @@ export type strbuf = {
 		methods: { moonwave.moonwave_high_function },
 		titleIndent: number?,
 		noTitle: boolean?
+	) -> strbuf,
+	pushAttrs: (
+		self: strbuf,
+		item: moonwave.moonwave_high_field | moonwave.moonwave_high_function | moonwave.moonwave_high_class
 	) -> strbuf,
 	pushClass: (self: strbuf, class: moonwave.moonwave_high_class, titleIndent: number?) -> strbuf,
 	filterConstructor: (
